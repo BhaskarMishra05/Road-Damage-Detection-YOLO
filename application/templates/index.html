@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOLO Road Defect Detection Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f1218;
+            --card-bg: #181d27;
+            --accent-yellow: #ffb703;
+            --accent-yellow-hover: #ffa200;
+            --road-gray: #2a313d;
+            --road-border: #3f495a;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --error-red: #ef4444;
+            --success-green: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background-image: 
+                radial-gradient(rgba(255, 183, 3, 0.05) 1px, transparent 0),
+                linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 24px 24px, 40px 100%;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            border: 1px solid var(--road-border);
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+            max-width: 520px;
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .road-stripe {
+            height: 6px;
+            background: repeating-linear-gradient(
+                -45deg,
+                var(--accent-yellow),
+                var(--accent-yellow) 12px,
+                #181d27 12px,
+                #181d27 24px
+            );
+        }
+
+        .card-body {
+            padding: 32px;
+        }
+
+        .header {
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-icon {
+            background: rgba(255, 183, 3, 0.1);
+            border: 1px solid rgba(255, 183, 3, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-icon svg {
+            width: 28px;
+            height: 28px;
+            fill: var(--accent-yellow);
+        }
+
+        h2 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-main);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 14px;
+            background-color: var(--bg-dark);
+            border: 1px solid var(--road-border);
+            border-radius: 6px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            font-family: inherit;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        select:focus {
+            border-color: var(--accent-yellow);
+            box-shadow: 0 0 0 2px rgba(255, 183, 3, 0.2);
+        }
+
+        .file-dropzone {
+            border: 2px dashed var(--road-border);
+            border-radius: 8px;
+            background-color: rgba(15, 18, 24, 0.5);
+            padding: 24px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .file-dropzone:hover, .file-dropzone.dragover {
+            border-color: var(--accent-yellow);
+            background-color: rgba(255, 183, 3, 0.03);
+        }
+
+        .file-dropzone input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .dropzone-icon {
+            width: 36px;
+            height: 36px;
+            margin: 0 auto 8px;
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+
+        .file-dropzone:hover .dropzone-icon {
+            color: var(--accent-yellow);
+        }
+
+        .dropzone-text {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .dropzone-text span {
+            color: var(--accent-yellow);
+            font-weight: 600;
+        }
+
+        .file-info {
+            margin-top: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--success-green);
+            word-break: break-all;
+            display: none;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            background-color: var(--accent-yellow);
+            color: #000;
+            font-weight: 700;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: background-color 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        button[type="submit"]:hover {
+            background-color: var(--accent-yellow-hover);
+        }
+
+        button[type="submit"]:active {
+            transform: scale(0.99);
+        }
+
+        .error {
+            background-color: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--error-red);
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .loading-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 18, 24, 0.92);
+            backdrop-filter: blur(4px);
+            z-index: 10;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            width: 44px;
+            height: 44px;
+            border: 4px solid var(--road-border);
+            border-top: 4px solid var(--accent-yellow);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text-main);
+        }
+
+        .loading-subtext {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="road-stripe"></div>
+    
+    <div class="card-body">
+        <div class="header">
+            <div class="header-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2L1 21h22L12 2zm0 4.2L18.6 18H5.4L12 6.2zM8 15h8v2H8v-2z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Road Defect Portal</h2>
+                <div class="subtitle">AI-Powered Pothole & Distress Detection</div>
+            </div>
+        </div>
+
+        {% if error %}
+            <div class="error">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>{{ error }}</span>
+            </div>
+        {% endif %}
+
+        <form id="detectionForm" action="/" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="media_type">Analysis Mode</label>
+                <select name="media_type" id="media_type" onchange="updateModeUI()" required>
+                    <option value="video" selected>Video Inspection (Tracking + PDF Report)</option>
+                    <option value="video_gps">Video + GPS Telemetry (500m Chainage Sets)</option>
+                    <option value="image">Single Frame Image Inspection</option>
+                </select>
+            </div>
+
+            <!-- Primary Media Input -->
+            <div class="form-group">
+                <label id="primaryLabel">Input Footage</label>
+                <div class="file-dropzone" id="dropzone1">
+                    <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <div class="dropzone-text">
+                        Drag & drop media file here or <span>Browse</span>
+                    </div>
+                    <input type="file" name="file" id="file" accept=".mp4,.avi,.mov,.mkv" onchange="showFileName(this, 'fileInfo1')" required>
+                </div>
+                <div id="fileInfo1" class="file-info"></div>
+            </div>
+
+            <!-- GPS CSV Input (Shown only when Video + GPS mode is selected) -->
+            <div class="form-group" id="gpsGroup" style="display: none;">
+                <label>GPS Telemetry File (.csv)</label>
+                <div class="file-dropzone" id="dropzone2">
+                    <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <div class="dropzone-text">
+                        Drag & drop GPS CSV file here or <span>Browse</span>
+                    </div>
+                    <input type="file" name="gps_file" id="gps_file" accept=".csv" onchange="showFileName(this, 'fileInfo2')">
+                </div>
+                <div id="fileInfo2" class="file-info"></div>
+            </div>
+
+            <button type="submit">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Run Detection Pipeline
+            </button>
+        </form>
+    </div>
+
+    <!-- Processing Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Analyzing Road Footage...</div>
+        <div class="loading-subtext">Running YOLO inference & telemetry pipeline</div>
+    </div>
+</div>
+
+<script>
+    function updateModeUI() {
+        const mediaType = document.getElementById('media_type').value;
+        const fileInput = document.getElementById('file');
+        const gpsGroup = document.getElementById('gpsGroup');
+        const gpsInput = document.getElementById('gps_file');
+        const primaryLabel = document.getElementById('primaryLabel');
+        
+        if (mediaType === 'image') {
+            fileInput.accept = ".jpg,.jpeg,.png";
+            primaryLabel.innerText = "Input Image";
+            gpsGroup.style.display = 'none';
+            gpsInput.required = false;
+        } else if (mediaType === 'video_gps') {
+            fileInput.accept = ".mp4,.avi,.mov,.mkv";
+            primaryLabel.innerText = "Input Video";
+            gpsGroup.style.display = 'block';
+            gpsInput.required = true;
+        } else {
+            fileInput.accept = ".mp4,.avi,.mov,.mkv";
+            primaryLabel.innerText = "Input Video";
+            gpsGroup.style.display = 'none';
+            gpsInput.required = false;
+        }
+    }
+
+    function showFileName(input, infoId) {
+        const fileInfo = document.getElementById(infoId);
+        if (input.files && input.files[0]) {
+            fileInfo.innerText = "Selected: " + input.files[0].name;
+            fileInfo.style.display = "block";
+        } else {
+            fileInfo.style.display = "none";
+        }
+    }
+
+    // Attach Drag and Drop handlers
+    ['dropzone1', 'dropzone2'].forEach(id => {
+        const dropzone = document.getElementById(id);
+        if (!dropzone) return;
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzone.classList.add('dragover');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+            }, false);
+        });
+    });
+
+    // Show spinner on submit
+    document.getElementById('detectionForm').addEventListener('submit', function() {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+    });
+</script>
+
+</body>
+</html>
