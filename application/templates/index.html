@@ -1,431 +1,374 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YOLO Road Defect Detection Portal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-dark: #0f1218;
-            --card-bg: #181d27;
-            --accent-yellow: #ffb703;
-            --accent-yellow-hover: #ffa200;
-            --road-gray: #2a313d;
-            --road-border: #3f495a;
-            --text-main: #f1f5f9;
-            --text-muted: #94a3b8;
-            --error-red: #ef4444;
-            --success-green: #10b981;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Road Defect Detection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --concrete:#dedbd3;
+  --concrete-2:#cfccc3;
+  --asphalt:#26292d;
+  --tarmac:#34383d;
+  --tarmac-2:#41464c;
+  --paint:#f4c20d;
+  --chalk:#f3f1ea;
+  --ink:#1b1d20;
+  --muted:#8f949b;
+  --survey:#5fb3c4;
+  --danger:#ff7b66;
+}
+*{box-sizing:border-box;margin:0}
+html{font-family:'Barlow',system-ui,sans-serif;color:var(--ink)}
+body{
+  min-height:100vh;display:flex;flex-direction:column;
+  background-color:var(--concrete);
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .2  0 0 0 0 .2  0 0 0 0 .2  0 0 0 .09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  -webkit-font-smoothing:antialiased;
+}
+header{display:flex;align-items:center;justify-content:space-between;padding:22px clamp(20px,5vw,64px)}
+.brand{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:22px;letter-spacing:.01em;display:flex;align-items:center;gap:10px}
+.brand i{width:26px;height:26px;border-radius:7px;background:var(--asphalt);position:relative;display:block}
+.brand i::after{content:"";position:absolute;left:50%;top:4px;bottom:4px;width:2px;transform:translateX(-50%);
+  background:repeating-linear-gradient(var(--paint) 0 4px,transparent 4px 8px)}
+#demoToggleBtn{font:500 14px 'Barlow',sans-serif;color:var(--ink);background:transparent;border:1.5px solid var(--ink);
+  padding:8px 16px;border-radius:999px;cursor:pointer;}
+#demoToggleBtn:hover,#demoToggleBtn.on{background:var(--ink);color:var(--chalk)}
+#demoToggleBtn:focus-visible,button:focus-visible,select:focus-visible{outline:3px solid var(--paint);outline-offset:2px}
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+main{flex:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,470px);gap:clamp(32px,6vw,96px);
+  align-items:center;width:100%;max-width:1160px;margin:0 auto;padding:16px clamp(20px,5vw,64px) 48px}
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            background-image: 
-                radial-gradient(rgba(255, 183, 3, 0.05) 1px, transparent 0),
-                linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-            background-size: 24px 24px, 40px 100%;
-        }
+/* ---------- intro ---------- */
+.intro h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:clamp(46px,7vw,84px);line-height:.95;letter-spacing:-.01em;max-width:11ch}
+.intro p.lead{margin-top:20px;font-size:18px;line-height:1.55;max-width:44ch;color:#44474c}
+.scene{margin-top:36px;max-width:440px;border-radius:14px;overflow:hidden;background:var(--asphalt);aspect-ratio:16/8.5;position:relative}
+.scene svg{display:block;width:100%;height:100%}
+.road-lines{}
+.box{fill:none;stroke:var(--paint);stroke-width:2;}
+.tag{font:600 11px 'Barlow',sans-serif;fill:var(--ink);}
+.tagbg{fill:var(--paint);}
+.defects{margin-top:22px;display:flex;flex-wrap:wrap;gap:8px;max-width:440px}
+.defects span{font-size:14px;font-weight:500;padding:6px 12px;border-radius:999px;background:var(--concrete-2)}
 
-        .container {
-            background-color: var(--card-bg);
-            border: 1px solid var(--road-border);
-            border-radius: 12px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
-            max-width: 520px;
-            width: 100%;
-            overflow: hidden;
-            position: relative;
-        }
+/* ---------- card ---------- */
+.card{position:relative;background:var(--asphalt);color:var(--chalk);border-radius:20px;overflow:hidden;
+  box-shadow:0 30px 60px -30px rgba(20,22,25,.55)}
+.card::before{content:"";position:absolute;left:22px;top:0;bottom:0;width:3px;
+  background:repeating-linear-gradient(to bottom,var(--paint) 0 16px,transparent 16px 30px);
+  background-size:3px 30px;opacity:.9}
+.inner{padding:34px 34px 30px 52px}
+.card h2{font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:600;letter-spacing:.01em}
+.card .sub{margin-top:6px;font-size:15px;line-height:1.5;color:var(--muted)}
+form{margin-top:26px;display:flex;flex-direction:column;gap:22px}
+label.f{display:flex;justify-content:space-between;align-items:baseline;font-weight:600;font-size:15px;margin-bottom:8px}
+label.f small{font-weight:400;color:var(--muted);font-size:13px}
 
-        .road-stripe {
-            height: 6px;
-            background: repeating-linear-gradient(
-                -45deg,
-                var(--accent-yellow),
-                var(--accent-yellow) 12px,
-                #181d27 12px,
-                #181d27 24px
-            );
-        }
+.select-wrap{position:relative}
+select{width:100%;appearance:none;background:var(--tarmac);color:var(--chalk);border:1.5px solid var(--tarmac-2);
+  border-radius:12px;padding:14px 44px 14px 16px;font:500 15px 'Barlow',sans-serif;cursor:pointer;}
+select:hover{border-color:#5a6068}
+.select-wrap::after{content:"";position:absolute;right:18px;top:50%;width:8px;height:8px;margin-top:-6px;
+  border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);pointer-events:none}
 
-        .card-body {
-            padding: 32px;
-        }
+.drop{position:relative;border-radius:14px;background:var(--tarmac);padding:22px 18px;text-align:center;cursor:pointer;
+  background-image:
+    linear-gradient(90deg,var(--paint) 50%,transparent 0),linear-gradient(90deg,var(--paint) 50%,transparent 0),
+    linear-gradient(0deg,var(--paint) 50%,transparent 0),linear-gradient(0deg,var(--paint) 50%,transparent 0);
+  background-repeat:repeat-x,repeat-x,repeat-y,repeat-y;
+  background-size:14px 2px,14px 2px,2px 14px,2px 14px;
+  background-position:0 0,0 100%,0 0,100% 0;
+  opacity:1;}
+.drop.alt{background-image:
+    linear-gradient(90deg,var(--survey) 50%,transparent 0),linear-gradient(90deg,var(--survey) 50%,transparent 0),
+    linear-gradient(0deg,var(--survey) 50%,transparent 0),linear-gradient(0deg,var(--survey) 50%,transparent 0)}
+.drop:hover,.drop.over{background-color:#3b4046;}
+.drop input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2}
+.drop .t{font-size:15px;font-weight:500}
+.drop .t b{color:var(--paint);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.drop.alt .t b{color:var(--survey)}
+.drop .h{margin-top:4px;font-size:13px;color:var(--muted)}
+.picked{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left}
+.picked.hidden,.hidden{display:none!important}
+.picked p:first-child{font-weight:600;font-size:15px;word-break:break-all}
+.picked p+p{font-size:13px;color:var(--muted);margin-top:2px}
+.picked button{position:relative;z-index:3;background:var(--tarmac-2);border:0;color:var(--chalk);width:30px;height:30px;border-radius:50%;
+  cursor:pointer;font-size:16px;line-height:1;}
+.picked button:hover{background:var(--danger);color:var(--ink)}
+.pop{}
 
-        .header {
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+#gpsGroup{}
 
-        .header-icon {
-            background: rgba(255, 183, 3, 0.1);
-            border: 1px solid rgba(255, 183, 3, 0.2);
-            padding: 10px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+.go{position:relative;border:0;border-radius:12px;background:var(--paint);color:var(--ink);padding:16px;
+  font:700 19px 'Barlow Condensed',sans-serif;letter-spacing:.03em;cursor:pointer;overflow:hidden;}
+.go:hover{transform:translateY(-1px)}
+.go:active{transform:translateY(1px)}
+.go::after{content:"";position:absolute;top:0;bottom:0;width:60px;left:-80px;background:rgba(255,255,255,.45);transform:skewX(-20deg);}
+.go:hover::after{left:110%}
 
-        .header-icon svg {
-            width: 28px;
-            height: 28px;
-            fill: var(--accent-yellow);
-        }
+.alert{padding:14px 16px;border-radius:12px;background:rgba(255,123,102,.12);border:1px solid rgba(255,123,102,.5);font-size:14px;line-height:1.45;margin-top:20px}
+.alert b{display:block;color:var(--danger);margin-bottom:2px}
+.banner{margin-top:20px;padding:12px 14px;border-radius:12px;background:rgba(95,179,196,.12);border:1px solid rgba(95,179,196,.4);
+  font-size:14px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.banner button{background:none;border:0;color:var(--survey);text-decoration:underline;cursor:pointer;font:500 14px 'Barlow',sans-serif}
 
-        h2 {
-            font-size: 1.35rem;
-            font-weight: 700;
-            color: var(--text-main);
-            letter-spacing: -0.02em;
-        }
+/* ---------- loading ---------- */
+#loadingOverlay{position:absolute;inset:0;z-index:20;background:var(--asphalt);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center}
+#loadingOverlay.hidden{display:none}
+.road{width:120px;height:130px;background:var(--tarmac);border-radius:10px;position:relative;overflow:hidden;margin-bottom:26px}
+.road::before{content:"";position:absolute;left:50%;top:-28px;bottom:0;width:4px;margin-left:-2px;
+  background:repeating-linear-gradient(var(--paint) 0 14px,transparent 14px 28px);}
+.road::after{content:"";position:absolute;left:0;right:0;height:2px;background:var(--paint);box-shadow:0 0 14px 2px var(--paint);}
+#loadingOverlay h3{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:600}
+#loadingStage{margin-top:4px;font-size:14px;color:var(--muted)}
+.bar{width:260px;height:6px;border-radius:3px;background:var(--tarmac);margin-top:22px;overflow:hidden}
+#progressBar{height:100%;width:25%;background:var(--paint);border-radius:3px;}
+.log{margin-top:22px;font-size:14px;line-height:1.8;text-align:left;color:var(--muted)}
+.log .done{color:var(--chalk)}
 
-        .subtitle {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
+footer{padding:18px;text-align:center;font-size:13px;color:#5d6065}
 
-        .form-group {
-            margin-bottom: 20px;
-        }
+/* ---------- entrance: one sequence ---------- */
+.intro h1,.intro .lead,.card{}
+.intro .lead{}
+.card{}
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: var(--text-main);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        select {
-            width: 100%;
-            padding: 12px 14px;
-            background-color: var(--bg-dark);
-            border: 1px solid var(--road-border);
-            border-radius: 6px;
-            color: var(--text-main);
-            font-size: 0.95rem;
-            font-family: inherit;
-            cursor: pointer;
-            outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        select:focus {
-            border-color: var(--accent-yellow);
-            box-shadow: 0 0 0 2px rgba(255, 183, 3, 0.2);
-        }
-
-        .file-dropzone {
-            border: 2px dashed var(--road-border);
-            border-radius: 8px;
-            background-color: rgba(15, 18, 24, 0.5);
-            padding: 24px 16px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            position: relative;
-        }
-
-        .file-dropzone:hover, .file-dropzone.dragover {
-            border-color: var(--accent-yellow);
-            background-color: rgba(255, 183, 3, 0.03);
-        }
-
-        .file-dropzone input[type="file"] {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            cursor: pointer;
-        }
-
-        .dropzone-icon {
-            width: 36px;
-            height: 36px;
-            margin: 0 auto 8px;
-            color: var(--text-muted);
-            transition: color 0.2s;
-        }
-
-        .file-dropzone:hover .dropzone-icon {
-            color: var(--accent-yellow);
-        }
-
-        .dropzone-text {
-            font-size: 0.875rem;
-            color: var(--text-muted);
-        }
-
-        .dropzone-text span {
-            color: var(--accent-yellow);
-            font-weight: 600;
-        }
-
-        .file-info {
-            margin-top: 8px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
-            color: var(--success-green);
-            word-break: break-all;
-            display: none;
-        }
-
-        button[type="submit"] {
-            width: 100%;
-            background-color: var(--accent-yellow);
-            color: #000;
-            font-weight: 700;
-            padding: 14px;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.95rem;
-            font-family: inherit;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            transition: background-color 0.2s, transform 0.1s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        button[type="submit"]:hover {
-            background-color: var(--accent-yellow-hover);
-        }
-
-        button[type="submit"]:active {
-            transform: scale(0.99);
-        }
-
-        .error {
-            background-color: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: var(--error-red);
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 0.875rem;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .loading-overlay {
-            display: none;
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(15, 18, 24, 0.92);
-            backdrop-filter: blur(4px);
-            z-index: 10;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .spinner {
-            width: 44px;
-            height: 44px;
-            border: 4px solid var(--road-border);
-            border-top: 4px solid var(--accent-yellow);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 16px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            font-weight: 600;
-            font-size: 1rem;
-            color: var(--text-main);
-        }
-
-        .loading-subtext {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-    </style>
+@media (max-width:860px){
+  main{grid-template-columns:1fr}
+  .intro h1{max-width:none}
+  .scene,.defects{max-width:none}
+}
+</style>
 </head>
 <body>
 
-<div class="container">
-    <div class="road-stripe"></div>
-    
-    <div class="card-body">
-        <div class="header">
-            <div class="header-icon">
-                <svg viewBox="0 0 24 24">
-                    <path d="M12 2L1 21h22L12 2zm0 4.2L18.6 18H5.4L12 6.2zM8 15h8v2H8v-2z"/>
-                </svg>
-            </div>
-            <div>
-                <h2>Road Defect Portal</h2>
-                <div class="subtitle">AI-Powered Pothole & Distress Detection</div>
-            </div>
+<header>
+  <div class="brand"><i></i>Road Defect Detection</div>
+  <button type="button" onclick="toggleDemoMode()" id="demoToggleBtn">Try sample input</button>
+</header>
+
+<main>
+  <section class="intro">
+    <h1>Find road damage from drive-by footage.</h1>
+    <p class="lead">Upload a video or photo of the pavement. The model marks every defect it finds and gives you a report you can hand to the repair crew.</p>
+
+    <div class="scene" aria-hidden="true">
+      <svg viewBox="0 0 440 238" preserveAspectRatio="xMidYMid slice">
+        <rect width="440" height="238" fill="#26292d"/>
+        <g class="road-lines">
+          <g fill="#f4c20d">
+            <rect x="217" y="-56" width="6" height="28" rx="1"/><rect x="217" y="0" width="6" height="28" rx="1"/>
+            <rect x="217" y="56" width="6" height="28" rx="1"/><rect x="217" y="112" width="6" height="28" rx="1"/>
+            <rect x="217" y="168" width="6" height="28" rx="1"/><rect x="217" y="224" width="6" height="28" rx="1"/>
+          </g>
+        </g>
+        <rect x="26" y="0" width="3" height="238" fill="#f3f1ea" opacity=".55"/>
+        <rect x="411" y="0" width="3" height="238" fill="#f3f1ea" opacity=".55"/>
+        <ellipse cx="108" cy="150" rx="26" ry="14" fill="#14161a"/>
+        <ellipse cx="108" cy="148" rx="19" ry="9" fill="#0d0e10"/>
+        <path d="M300 78 l16 10 -8 12 14 9 -6 14" stroke="#14161a" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <g class="boxgrp">
+          <rect class="box" x="72" y="126" width="72" height="46" rx="2"/>
+          <rect class="tagbg" x="72" y="110" width="68" height="16" rx="2"/>
+          <text class="tag" x="78" y="122">pothole 0.91</text>
+        </g>
+      </svg>
+    </div>
+    <div class="defects"><span>Potholes</span><span>Cracks</span><span>Rutting</span><span>Alligator cracking</span></div>
+  </section>
+
+  <div class="card">
+    <div class="inner">
+      <h2>New inspection</h2>
+      <p class="sub">Pick what you're uploading, add the files, and run the analysis.</p>
+
+      {% if error %}
+      <div class="alert" role="alert">
+        <b>The analysis didn't finish</b>
+        <span>{{ error }}</span>
+      </div>
+      {% endif %}
+
+      <div id="demoBanner" class="banner hidden">
+        <span>Sample video and GPS file loaded.</span>
+        <button type="button" onclick="toggleDemoMode()">Exit sample</button>
+      </div>
+
+      <form id="detectionForm" action="/" method="POST" enctype="multipart/form-data">
+
+        <div>
+          <label class="f" for="media_type"><span>What are you inspecting?</span></label>
+          <div class="select-wrap">
+            <select name="media_type" id="media_type" onchange="updateModeUI()" required>
+              <option value="video" selected>Video, with PDF report</option>
+              <option value="video_gps">Video and GPS, in 500 m sections</option>
+              <option value="image">Single image</option>
+            </select>
+          </div>
         </div>
 
-        {% if error %}
-            <div class="error">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="8" x2="12" y2="12"></line>
-                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                </svg>
-                <span>{{ error }}</span>
+        <div>
+          <label class="f" id="primaryLabel">Video</label>
+          <div class="drop" id="dropzone1">
+            <input type="file" name="file" id="file" accept=".mp4,.avi,.mov,.mkv" onchange="handleFileChange(this,'fileInfo1','dropzone1')" required>
+            <div id="dropzone1-empty">
+              <p class="t">Drop a file here or <b>browse</b></p>
+              <p class="h" id="fileHint">MP4, AVI, MOV or MKV</p>
             </div>
-        {% endif %}
-
-        <form id="detectionForm" action="/" method="POST" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="media_type">Analysis Mode</label>
-                <select name="media_type" id="media_type" onchange="updateModeUI()" required>
-                    <option value="video" selected>Video Inspection (Tracking + PDF Report)</option>
-                    <option value="video_gps">Video + GPS Telemetry (500m Chainage Sets)</option>
-                    <option value="image">Single Frame Image Inspection</option>
-                </select>
+            <div id="fileInfo1" class="picked hidden">
+              <div>
+                <p id="fileInfo1-name">video.mp4</p>
+                <p id="fileInfo1-size"></p>
+              </div>
+              <button type="button" onclick="resetFileInput('file','fileInfo1','dropzone1')" aria-label="Remove file">&times;</button>
             </div>
+          </div>
+        </div>
 
-            <!-- Primary Media Input -->
-            <div class="form-group">
-                <label id="primaryLabel">Input Footage</label>
-                <div class="file-dropzone" id="dropzone1">
-                    <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="17 8 12 3 7 8"></polyline>
-                        <line x1="12" y1="3" x2="12" y2="15"></line>
-                    </svg>
-                    <div class="dropzone-text">
-                        Drag & drop media file here or <span>Browse</span>
-                    </div>
-                    <input type="file" name="file" id="file" accept=".mp4,.avi,.mov,.mkv" onchange="showFileName(this, 'fileInfo1')" required>
-                </div>
-                <div id="fileInfo1" class="file-info"></div>
+        <div id="gpsGroup" class="hidden">
+          <label class="f"><span>GPS file</span><small>Latitude and longitude, .csv</small></label>
+          <div class="drop alt" id="dropzone2">
+            <input type="file" name="gps_file" id="gps_file" accept=".csv" onchange="handleFileChange(this,'fileInfo2','dropzone2')">
+            <div id="dropzone2-empty">
+              <p class="t">Drop the CSV here or <b>browse</b></p>
             </div>
-
-            <!-- GPS CSV Input (Shown only when Video + GPS mode is selected) -->
-            <div class="form-group" id="gpsGroup" style="display: none;">
-                <label>GPS Telemetry File (.csv)</label>
-                <div class="file-dropzone" id="dropzone2">
-                    <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path>
-                        <circle cx="12" cy="10" r="3"></circle>
-                    </svg>
-                    <div class="dropzone-text">
-                        Drag & drop GPS CSV file here or <span>Browse</span>
-                    </div>
-                    <input type="file" name="gps_file" id="gps_file" accept=".csv" onchange="showFileName(this, 'fileInfo2')">
-                </div>
-                <div id="fileInfo2" class="file-info"></div>
+            <div id="fileInfo2" class="picked hidden">
+              <div>
+                <p id="fileInfo2-name">gps.csv</p>
+                <p id="fileInfo2-size"></p>
+              </div>
+              <button type="button" onclick="resetFileInput('gps_file','fileInfo2','dropzone2')" aria-label="Remove file">&times;</button>
             </div>
+          </div>
+        </div>
 
-            <button type="submit">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
-                Run Detection Pipeline
-            </button>
-        </form>
+        <button type="submit" class="go">Start analysis</button>
+      </form>
     </div>
 
-    <!-- Processing Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="spinner"></div>
-        <div class="loading-text">Analyzing Road Footage...</div>
-        <div class="loading-subtext">Running YOLO inference & telemetry pipeline</div>
+    <div id="loadingOverlay" class="hidden">
+      <div class="road"></div>
+      <h3>Scanning the road surface</h3>
+      <p id="loadingStage">Checking your upload</p>
+      <div class="bar"><div id="progressBar"></div></div>
+      <div class="log">
+        <p id="logStep1" class="done">&#10003; File received</p>
+        <p id="logStep2">&#8226; Finding defects</p>
+        <p id="logStep3">&#8226; Building the report</p>
+      </div>
     </div>
-</div>
+  </div>
+</main>
+
+<footer>Built with Ultralytics YOLO</footer>
 
 <script>
-    function updateModeUI() {
-        const mediaType = document.getElementById('media_type').value;
-        const fileInput = document.getElementById('file');
-        const gpsGroup = document.getElementById('gpsGroup');
-        const gpsInput = document.getElementById('gps_file');
-        const primaryLabel = document.getElementById('primaryLabel');
-        
-        if (mediaType === 'image') {
-            fileInput.accept = ".jpg,.jpeg,.png";
-            primaryLabel.innerText = "Input Image";
-            gpsGroup.style.display = 'none';
-            gpsInput.required = false;
-        } else if (mediaType === 'video_gps') {
-            fileInput.accept = ".mp4,.avi,.mov,.mkv";
-            primaryLabel.innerText = "Input Video";
-            gpsGroup.style.display = 'block';
-            gpsInput.required = true;
-        } else {
-            fileInput.accept = ".mp4,.avi,.mov,.mkv";
-            primaryLabel.innerText = "Input Video";
-            gpsGroup.style.display = 'none';
-            gpsInput.required = false;
-        }
-    }
+function updateModeUI() {
+  const mediaType = document.getElementById('media_type').value;
+  const fileInput = document.getElementById('file');
+  const gpsGroup = document.getElementById('gpsGroup');
+  const gpsInput = document.getElementById('gps_file');
+  const label = document.getElementById('primaryLabel');
+  const hint = document.getElementById('fileHint');
 
-    function showFileName(input, infoId) {
-        const fileInfo = document.getElementById(infoId);
-        if (input.files && input.files[0]) {
-            fileInfo.innerText = "Selected: " + input.files[0].name;
-            fileInfo.style.display = "block";
-        } else {
-            fileInfo.style.display = "none";
-        }
-    }
+  if (mediaType === 'image') {
+    fileInput.accept = ".jpg,.jpeg,.png";
+    label.innerText = "Image";
+    hint.innerText = "JPG or PNG";
+    gpsGroup.classList.add('hidden');
+    gpsInput.required = false;
+  } else if (mediaType === 'video_gps') {
+    fileInput.accept = ".mp4,.avi,.mov,.mkv";
+    label.innerText = "Video";
+    hint.innerText = "MP4, AVI, MOV or MKV";
+    gpsGroup.classList.remove('hidden');
+    gpsInput.required = true;
+  } else {
+    fileInput.accept = ".mp4,.avi,.mov,.mkv";
+    label.innerText = "Video";
+    hint.innerText = "MP4, AVI, MOV or MKV";
+    gpsGroup.classList.add('hidden');
+    gpsInput.required = false;
+  }
+}
 
-    // Attach Drag and Drop handlers
-    ['dropzone1', 'dropzone2'].forEach(id => {
-        const dropzone = document.getElementById(id);
-        if (!dropzone) return;
+function handleFileChange(input, infoId, dropzoneId) {
+  const info = document.getElementById(infoId);
+  const empty = document.getElementById(dropzoneId + '-empty');
+  if (input.files && input.files[0]) {
+    const f = input.files[0];
+    document.getElementById(infoId + '-name').innerText = f.name;
+    document.getElementById(infoId + '-size').innerText = (f.size / (1024 * 1024)).toFixed(2) + " MB";
+    if (empty) empty.classList.add('hidden');
+    info.classList.remove('hidden');
+    
+  }
+}
 
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropzone.addEventListener(eventName, (e) => {
-                e.preventDefault();
-                dropzone.classList.add('dragover');
-            }, false);
-        });
+function resetFileInput(inputId, infoId, dropzoneId) {
+  document.getElementById(inputId).value = '';
+  document.getElementById(infoId).classList.add('hidden');
+  const empty = document.getElementById(dropzoneId + '-empty');
+  if (empty) empty.classList.remove('hidden');
+}
 
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropzone.addEventListener(eventName, (e) => {
-                e.preventDefault();
-                dropzone.classList.remove('dragover');
-            }, false);
-        });
+['dropzone1', 'dropzone2'].forEach(id => {
+  const dz = document.getElementById(id);
+  if (!dz) return;
+  ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, () => dz.classList.remove('over')));
+});
+
+document.getElementById('detectionForm').addEventListener('submit', function () {
+  document.getElementById('loadingOverlay').classList.remove('hidden');
+  const stage = document.getElementById('loadingStage');
+  const bar = document.getElementById('progressBar');
+  const l2 = document.getElementById('logStep2');
+  const l3 = document.getElementById('logStep3');
+
+  setTimeout(() => {
+    bar.style.width = "60%";
+    stage.innerText = "Running detection on each frame";
+    l2.className = "done"; l2.innerHTML = "&#10003; Defects found";
+  }, 1200);
+  setTimeout(() => {
+    bar.style.width = "90%";
+    stage.innerText = "Putting the PDF report together";
+    l3.className = "done"; l3.innerHTML = "&#10003; Report ready";
+  }, 2500);
+});
+
+let isDemoActive = false;
+function toggleDemoMode() {
+  isDemoActive = !isDemoActive;
+  const banner = document.getElementById('demoBanner');
+  const btn = document.getElementById('demoToggleBtn');
+  const mediaType = document.getElementById('media_type');
+
+  if (isDemoActive) {
+    banner.classList.remove('hidden');
+    btn.classList.add('on');
+    mediaType.value = "video_gps";
+    updateModeUI();
+    [['fileInfo1', 'dropzone1', 'sample_pavement_scan.mp4', '128.4 MB (sample)'],
+     ['fileInfo2', 'dropzone2', 'route_gps_telemetry.csv', '1.2 MB (sample)']].forEach(([i, d, n, s]) => {
+      document.getElementById(i + '-name').innerText = n;
+      document.getElementById(i + '-size').innerText = s;
+      document.getElementById(d + '-empty').classList.add('hidden');
+      document.getElementById(i).classList.remove('hidden');
     });
-
-    // Show spinner on submit
-    document.getElementById('detectionForm').addEventListener('submit', function() {
-        document.getElementById('loadingOverlay').style.display = 'flex';
-    });
+  } else {
+    banner.classList.add('hidden');
+    btn.classList.remove('on');
+    mediaType.value = "video";
+    updateModeUI();
+    resetFileInput('file', 'fileInfo1', 'dropzone1');
+    resetFileInput('gps_file', 'fileInfo2', 'dropzone2');
+  }
+}
 </script>
-
 </body>
 </html>

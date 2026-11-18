@@ -1,474 +1,290 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Road Inspection Results</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-dark: #0f1218;
-            --card-bg: #181d27;
-            --accent-yellow: #ffb703;
-            --accent-yellow-hover: #ffa200;
-            --road-border: #3f495a;
-            --text-main: #f1f5f9;
-            --text-muted: #94a3b8;
-            --success-green: #10b981;
-            --warning-orange: #f59e0b;
-            --danger-red: #ef4444;
-            --btn-secondary: #2a313d;
-            --btn-secondary-hover: #374151;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inspection results</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --concrete:#dedbd3;
+  --concrete-2:#cfccc3;
+  --asphalt:#26292d;
+  --tarmac:#34383d;
+  --tarmac-2:#41464c;
+  --paint:#f4c20d;
+  --chalk:#f3f1ea;
+  --ink:#1b1d20;
+  --muted:#8f949b;
+  --survey:#5fb3c4;
+  --high:#ff7b66;
+  --medium:#f0a63c;
+  --low:#7fd49a;
+}
+*{box-sizing:border-box;margin:0}
+html{font-family:'Barlow',system-ui,sans-serif;color:var(--ink)}
+body{
+  min-height:100vh;
+  background-color:var(--concrete);
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .2  0 0 0 0 .2  0 0 0 0 .2  0 0 0 .09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  -webkit-font-smoothing:antialiased;
+}
+header{display:flex;align-items:center;justify-content:space-between;padding:22px clamp(20px,5vw,64px)}
+.brand{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:22px;display:flex;align-items:center;gap:10px}
+.brand i{width:26px;height:26px;border-radius:7px;background:var(--asphalt);position:relative;display:block}
+.brand i::after{content:"";position:absolute;left:50%;top:4px;bottom:4px;width:2px;transform:translateX(-50%);
+  background:repeating-linear-gradient(var(--paint) 0 4px,transparent 4px 8px)}
+.back{font:500 14px 'Barlow',sans-serif;color:var(--ink);border:1.5px solid var(--ink);padding:8px 16px;border-radius:999px;text-decoration:none}
+.back:hover{background:var(--ink);color:var(--chalk)}
+a:focus-visible,video:focus-visible{outline:3px solid var(--paint);outline-offset:2px}
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+main{max-width:900px;margin:0 auto;padding:8px clamp(20px,5vw,64px) 56px}
+.page-title{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px 20px;margin-bottom:22px}
+.page-title h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:clamp(40px,6vw,64px);line-height:.95}
+.done{font-size:15px;font-weight:500;padding:6px 14px;border-radius:999px;background:var(--asphalt);color:var(--chalk);display:inline-flex;align-items:center;gap:8px}
+.done::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--low)}
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 30px 20px;
-            background-image: 
-                radial-gradient(rgba(255, 183, 3, 0.05) 1px, transparent 0),
-                linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-            background-size: 24px 24px, 40px 100%;
-        }
+.card{position:relative;background:var(--asphalt);color:var(--chalk);border-radius:20px;padding:34px 34px 34px 52px;
+  box-shadow:0 30px 60px -30px rgba(20,22,25,.55);overflow:hidden}
+.card::before{content:"";position:absolute;left:22px;top:0;bottom:0;width:3px;
+  background:repeating-linear-gradient(to bottom,var(--paint) 0 16px,transparent 16px 30px)}
 
-        .container {
-            background-color: var(--card-bg);
-            border: 1px solid var(--road-border);
-            border-radius: 12px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
-            max-width: 820px;
-            width: 100%;
-            overflow: hidden;
-        }
+h3{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:600;margin:30px 0 12px;display:flex;align-items:center;gap:10px}
+h3 svg{color:var(--paint);flex-shrink:0}
+.card>h3:first-child{margin-top:0}
 
-        .road-stripe {
-            height: 6px;
-            background: repeating-linear-gradient(
-                -45deg,
-                var(--accent-yellow),
-                var(--accent-yellow) 12px,
-                #181d27 12px,
-                #181d27 24px
-            );
-        }
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+.metric-card{background:var(--tarmac);border-radius:14px;padding:18px}
+.metric-label{font-size:14px;color:var(--muted);margin-bottom:6px}
+.metric-value{font-family:'Barlow Condensed',sans-serif;font-size:40px;font-weight:700;line-height:1}
+.metric-value.text{font-family:'Barlow',sans-serif;font-size:16px;font-weight:500;line-height:1.45}
+.priority-high{color:var(--high)}
+.priority-medium{color:var(--medium)}
+.priority-low{color:var(--low)}
+.span-2{grid-column:span 2}
 
-        .card-body {
-            padding: 32px;
-        }
+.media-container{border-radius:14px;overflow:hidden;background:#000}
+video,img{width:100%;display:block;max-height:480px;object-fit:contain;background:#000}
 
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 24px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid var(--road-border);
-        }
+.table-wrapper{background:var(--tarmac);border-radius:14px;overflow:hidden}
+table{width:100%;border-collapse:collapse;text-align:left}
+th{font-size:14px;font-weight:500;color:var(--muted);padding:12px 18px;border-bottom:1px solid var(--tarmac-2)}
+td{padding:13px 18px;font-size:15px;border-bottom:1px solid rgba(65,70,76,.6)}
+tr:last-child td{border-bottom:0}
+th:last-child,td.count-cell{text-align:right;width:1%;white-space:nowrap}
+.count-cell{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:22px;color:var(--paint)}
+.empty{color:var(--muted);text-align:center}
 
-        .header-title {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+.segment-card{background:var(--tarmac);border-radius:14px;padding:18px;margin-bottom:14px}
+.segment-head{display:flex;justify-content:space-between;align-items:baseline;gap:6px 16px;flex-wrap:wrap}
+.segment-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:600}
+.segment-title span{color:var(--muted);font-family:'Barlow',sans-serif;font-size:14px;font-weight:400;margin-left:6px}
+.segment-priority{font-size:15px;font-weight:600}
+.segment-priority small{color:var(--muted);font-weight:400;font-size:14px}
+.coords{font-size:14px;color:var(--muted);margin:6px 0 14px}
+.segment-card .table-wrapper{background:var(--asphalt)}
+.segment-card th{padding:10px 16px}
+.segment-card td{padding:11px 16px}
 
-        .header-icon {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            padding: 8px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--success-green);
-        }
+.actions-group{display:flex;gap:12px;flex-wrap:wrap;margin-top:32px;padding-top:26px;border-top:1px solid var(--tarmac-2)}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 22px;border-radius:12px;text-decoration:none;
+  font:700 18px 'Barlow Condensed',sans-serif;letter-spacing:.02em}
+.btn-primary{background:var(--paint);color:var(--ink)}
+.btn-primary:hover{background:#ffd23a}
+.btn-secondary{background:var(--tarmac);color:var(--chalk)}
+.btn-secondary:hover{background:var(--tarmac-2)}
 
-        h2 {
-            font-size: 1.35rem;
-            font-weight: 700;
-            color: var(--text-main);
-        }
-
-        .status-badge {
-            background: rgba(16, 185, 129, 0.15);
-            color: var(--success-green);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--accent-yellow);
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* Summary Cards Grid */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .metric-card {
-            background-color: var(--bg-dark);
-            border: 1px solid var(--road-border);
-            border-radius: 8px;
-            padding: 16px;
-        }
-
-        .metric-label {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 6px;
-        }
-
-        .metric-value {
-            font-size: 1.25rem;
-            font-weight: 700;
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--text-main);
-        }
-
-        .priority-high { color: var(--danger-red); }
-        .priority-medium { color: var(--warning-orange); }
-        .priority-low { color: var(--success-green); }
-
-        .media-container {
-            background-color: var(--bg-dark);
-            border: 1px solid var(--road-border);
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 24px;
-        }
-
-        video, img {
-            width: 100%;
-            display: block;
-            max-height: 480px;
-            object-fit: contain;
-            background-color: #000;
-        }
-
-        /* Table Design */
-        .table-wrapper {
-            background-color: var(--bg-dark);
-            border: 1px solid var(--road-border);
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 24px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-
-        th {
-            background-color: rgba(255, 183, 3, 0.08);
-            color: var(--accent-yellow);
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--road-border);
-        }
-
-        td {
-            padding: 12px 16px;
-            font-size: 0.875rem;
-            border-bottom: 1px solid rgba(63, 73, 90, 0.5);
-            color: var(--text-main);
-        }
-
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        .count-cell {
-            font-family: 'JetBrains Mono', monospace;
-            font-weight: 600;
-            color: var(--accent-yellow);
-        }
-
-        /* GPS Chainage Segment Card */
-        .segment-card {
-            background-color: var(--bg-dark);
-            border: 1px solid var(--road-border);
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-
-        .segment-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--road-border);
-        }
-
-        .segment-title {
-            font-weight: 700;
-            color: var(--accent-yellow);
-            font-size: 0.95rem;
-        }
-
-        /* Action Buttons */
-        .actions-group {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-top: 24px;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-size: 0.875rem;
-            font-weight: 700;
-            text-decoration: none;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-
-        .btn-primary {
-            background-color: var(--accent-yellow);
-            color: #000;
-        }
-
-        .btn-primary:hover {
-            background-color: var(--accent-yellow-hover);
-        }
-
-        .btn-secondary {
-            background-color: var(--btn-secondary);
-            color: var(--text-main);
-            border: 1px solid var(--road-border);
-        }
-
-        .btn-secondary:hover {
-            background-color: var(--btn-secondary-hover);
-        }
-    </style>
+@media (max-width:640px){
+  .card{padding:26px 20px 26px 38px}
+  .card::before{left:16px}
+  .span-2{grid-column:auto}
+  .btn{width:100%;justify-content:center}
+}
+</style>
 </head>
 <body>
 
-<div class="container">
-    <div class="road-stripe"></div>
-    
-    <div class="card-body">
-        <div class="header">
-            <div class="header-title">
-                <div class="header-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                </div>
-                <h2>Inspection Complete</h2>
-            </div>
-            <span class="status-badge">Processed</span>
+<header>
+  <div class="brand"><i></i>Road Defect Detection</div>
+  <a href="/" class="back">New inspection</a>
+</header>
+
+<main>
+  <div class="page-title">
+    <h1>Inspection results</h1>
+    <span class="done">Analysis complete</span>
+  </div>
+
+  <div class="card">
+
+    <!-- Single Image & Video Modes Metrics Summary -->
+    {% if media_type in ['image', 'video'] %}
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Damage index</div>
+          <div class="metric-value">{{ damage_score }}</div>
         </div>
+        <div class="metric-card">
+          <div class="metric-label">Maintenance priority</div>
+          <div class="metric-value {% if priority == 'HIGH' %}priority-high{% elif priority == 'MEDIUM' %}priority-medium{% else %}priority-low{% endif %}">
+            {{ priority|capitalize }}
+          </div>
+        </div>
+        <div class="metric-card span-2">
+          <div class="metric-label">Summary</div>
+          <div class="metric-value text">{{ remark }}</div>
+        </div>
+      </div>
+    {% endif %}
 
-        <!-- Single Image & Video Modes Metrics Summary -->
-        {% if media_type in ['image', 'video'] %}
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-label">Damage Index</div>
-                    <div class="metric-value">{{ damage_score }}</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Maintenance Priority</div>
-                    <div class="metric-value {% if priority == 'HIGH' %}priority-high{% elif priority == 'MEDIUM' %}priority-medium{% else %}priority-low{% endif %}">
-                        {{ priority }}
-                    </div>
-                </div>
-                <div class="metric-card" style="grid-column: span 2;">
-                    <div class="metric-label">Engine Remark</div>
-                    <div class="metric-value" style="font-size: 0.95rem; font-family: inherit;">{{ remark }}</div>
-                </div>
-            </div>
-        {% endif %}
+    <!-- Video Display -->
+    {% if media_type in ['video', 'video_gps'] %}
+      <h3>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="23 7 16 12 23 17 23 7"></polygon>
+          <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+        </svg>
+        Annotated video
+      </h3>
+      <div class="media-container">
+        <video controls autoplay muted>
+          <source src="{{ url_for('download_file', filename=video_file) }}" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+      </div>
+    {% endif %}
 
-        <!-- Video Display -->
-        {% if media_type in ['video', 'video_gps'] %}
-            <h3>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="23 7 16 12 23 17 23 7"></polygon>
-                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-                </svg>
-                Annotated Video Footage
-            </h3>
-            <div class="media-container">
-                <video controls autoplay muted>
-                    <source src="{{ url_for('download_file', filename=video_file) }}" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-            </div>
-        {% endif %}
+    <!-- Image Display -->
+    {% if media_type == 'image' %}
+      <h3>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+        Annotated image
+      </h3>
+      <div class="media-container">
+        <img src="{{ url_for('static', filename=result_image) }}" alt="Detection output with defects marked">
+      </div>
+    {% endif %}
 
-        <!-- Image Display -->
-        {% if media_type == 'image' %}
-            <h3>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                    <polyline points="21 15 16 10 5 21"></polyline>
-                </svg>
-                Annotated Frame
-            </h3>
-            <div class="media-container">
-                <img src="{{ url_for('static', filename=result_image) }}" alt="Detection Output Frame">
-            </div>
-        {% endif %}
-
-        <!-- Single Frame or Standard Video Defect Tally -->
-        {% if media_type in ['image', 'video'] %}
-            <h3>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="20" x2="18" y2="10"></line>
-                    <line x1="12" y1="20" x2="12" y2="4"></line>
-                    <line x1="6" y1="20" x2="6" y2="14"></line>
-                </svg>
-                Detected Defect Tally
-            </h3>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Defect Classification</th>
-                            <th>Unique Occurrences</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for cls_name, count in counts.items() %}
-                        <tr>
-                            <td>{{ cls_name.upper() }}</td>
-                            <td class="count-cell">{{ count }}</td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="2" style="color: var(--text-muted); text-align: center;">No defects recorded in this pass.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% endif %}
-
-        <!-- Video + GPS Mode (500m Chainage Sets Breakdown) -->
-        {% if media_type == 'video_gps' %}
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-label">Total Road Length</div>
-                    <div class="metric-value">{{ total_distance_km }} km</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">500m Chainage Sets</div>
-                    <div class="metric-value">{{ total_segments }}</div>
-                </div>
-            </div>
-
-            <h3>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path>
-                    <circle cx="12" cy="10" r="3"></circle>
-                </svg>
-                500m Chainage Segment Analysis
-            </h3>
-
-            {% for seg in segments %}
-                <div class="segment-card">
-                    <div class="segment-header">
-                        <div class="segment-title">Chainage {{ seg.chainage }} ({{ seg.start_km }} - {{ seg.end_km }} km)</div>
-                        <div class="priority-badge {% if seg.priority == 'HIGH' %}priority-high{% elif seg.priority == 'MEDIUM' %}priority-medium{% else %}priority-low{% endif %}" style="font-weight: 700; font-size: 0.8rem;">
-                            {{ seg.priority }} PRIORITY (Score: {{ seg.severity_score }})
-                        </div>
-                    </div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">
-                        <strong>Coordinates:</strong> ({{ seg.start_coords[0] }}, {{ seg.start_coords[1] }}) &rarr; ({{ seg.end_coords[0] }}, {{ seg.end_coords[1] }})
-                    </div>
-                    
-                    <div class="table-wrapper" style="margin-bottom: 0;">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Defect Type</th>
-                                    <th>Count</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for cls_name, count in seg.counts.items() %}
-                                <tr>
-                                    <td>{{ cls_name.upper() }}</td>
-                                    <td class="count-cell">{{ count }}</td>
-                                </tr>
-                                {% else %}
-                                <tr>
-                                    <td colspan="2" style="color: var(--text-muted); text-align: center;">No defects in this segment.</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+    <!-- Single Frame or Standard Video Defect Tally -->
+    {% if media_type in ['image', 'video'] %}
+      <h3>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+        Defects found
+      </h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Defect type</th>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cls_name, count in counts.items() %}
+            <tr>
+              <td>{{ cls_name|replace('_', ' ')|capitalize }}</td>
+              <td class="count-cell">{{ count }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="2" class="empty">No defects found.</td>
+            </tr>
             {% endfor %}
-        {% endif %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
 
-        <!-- Action Buttons -->
-        <div class="actions-group">
-            {% if pdf_file %}
-                <a href="{{ url_for('download_file', filename=pdf_file) }}" class="btn btn-primary" target="_blank">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    Download PDF Summary Report
-                </a>
-            {% endif %}
-
-            <a href="/" class="btn btn-secondary">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="1 4 1 10 7 10"></polyline>
-                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-                </svg>
-                Inspect Another File
-            </a>
+    <!-- Video + GPS Mode (500m Chainage Sets Breakdown) -->
+    {% if media_type == 'video_gps' %}
+      <div class="metrics-grid" style="margin-top:30px;">
+        <div class="metric-card">
+          <div class="metric-label">Road length</div>
+          <div class="metric-value">{{ total_distance_km }} <span style="font-size:20px;color:var(--muted)">km</span></div>
         </div>
+        <div class="metric-card">
+          <div class="metric-label">500 m sections</div>
+          <div class="metric-value">{{ total_segments }}</div>
+        </div>
+      </div>
+
+      <h3>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path>
+          <circle cx="12" cy="10" r="3"></circle>
+        </svg>
+        Section by section
+      </h3>
+
+      {% for seg in segments %}
+        <div class="segment-card">
+          <div class="segment-head">
+            <div class="segment-title">Chainage {{ seg.chainage }}<span>{{ seg.start_km }} to {{ seg.end_km }} km</span></div>
+            <div class="segment-priority {% if seg.priority == 'HIGH' %}priority-high{% elif seg.priority == 'MEDIUM' %}priority-medium{% else %}priority-low{% endif %}">
+              {{ seg.priority|capitalize }} priority <small>&nbsp;Score {{ seg.severity_score }}</small>
+            </div>
+          </div>
+          <p class="coords">({{ seg.start_coords[0] }}, {{ seg.start_coords[1] }}) &rarr; ({{ seg.end_coords[0] }}, {{ seg.end_coords[1] }})</p>
+
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Defect type</th>
+                  <th>Count</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for cls_name, count in seg.counts.items() %}
+                <tr>
+                  <td>{{ cls_name|replace('_', ' ')|capitalize }}</td>
+                  <td class="count-cell">{{ count }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                  <td colspan="2" class="empty">No defects in this section.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- Action Buttons -->
+    <div class="actions-group">
+      {% if pdf_file %}
+        <a href="{{ url_for('download_file', filename=pdf_file) }}" class="btn btn-primary" target="_blank">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Download PDF report
+        </a>
+      {% endif %}
+      <a href="/" class="btn btn-secondary">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="1 4 1 10 7 10"></polyline>
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+        </svg>
+        Inspect another file
+      </a>
     </div>
-</div>
+
+  </div>
+</main>
 
 </body>
 </html>

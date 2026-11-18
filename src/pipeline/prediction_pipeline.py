@@ -36,12 +36,12 @@ class Prediction:
         }
         
         self.class_id_to_name = {
-            0: "Pothole",
-            1: "Crack",
-            2: "Debris",
-            3: "Manhole",
-            4: "Speed Breaker",
-            5: "Road Barricade"
+            0: "pothole",
+            1: "crack",
+            2: "debris",
+            3: "manhole",
+            4: "speed breaker",
+            5: "road barricade"
         }
 
     # ==========================================
@@ -58,12 +58,13 @@ class Prediction:
 
         total_score = 0.0
         for cls_key, count in counts.items():
+            if isinstance(cls_key, int):
+                cls_key = self.class_id_to_name.get(cls_key, "pothole")
             if isinstance(cls_key, str):
                 cls_key = cls_key.lower().strip()
             weight = self.class_weights.get(cls_key, 1.0)
             total_score += count * weight
 
-        # Cap score option for single image/video if max_score is provided
         score = round(min(max_score, total_score) if max_score else total_score, 2)
 
         if score >= 25.0 or (max_score == 10.0 and score >= 8.5):
@@ -117,7 +118,7 @@ class Prediction:
     # 1. IMAGE ANALYZER
     # ==========================================
     def image_classifier(self, path_to_image: str, generate_pdf: bool = True):
-        """Processes a single image, evaluates severity score, and optionally exports PDF report."""
+        """Processes a single image, evaluates severity score, and exports detections list."""
         image_name = os.path.splitext(os.path.basename(path_to_image))[0]
         os.makedirs(self.config.output_dir, exist_ok=True)
 
@@ -132,12 +133,20 @@ class Prediction:
 
         boxes = results[0].boxes
         counts = defaultdict(int)
+        detections_list = []
 
         if boxes is not None and len(boxes) > 0:
             clss = boxes.cls.cpu().numpy().astype(int)
-            for cls_id in clss:
-                class_name = self.model.names[cls_id]
+            confs = boxes.conf.cpu().numpy().astype(float) if boxes.conf is not None else [1.0] * len(clss)
+            for cls_id, conf in zip(clss, confs):
+                class_name = self.class_id_to_name.get(cls_id, str(self.model.names[cls_id])).lower()
                 counts[class_name] += 1
+                detections_list.append({
+                    "track_id": None,
+                    "class_name": class_name,
+                    "confidence": float(conf),
+                    "frame_no": None
+                })
 
         score, priority, remark = self.calculate_severity(counts, max_score=10.0)
 
@@ -146,7 +155,8 @@ class Prediction:
             "counts": dict(counts),
             "severity_score": score,
             "priority": priority,
-            "remark": remark
+            "remark": remark,
+            "detections": detections_list
         }
 
         if generate_pdf:
@@ -160,7 +170,7 @@ class Prediction:
     # 2. VIDEO ANALYZER (NO GPS)
     # ==========================================
     def video_classifier(self, video_path: str, display_preview: bool = False, generate_pdf: bool = True):
-        """Runs tracking on standalone video using ByteTrack and calculates route severity score."""
+        """Runs tracking on standalone video using ByteTrack and collects all frame detections."""
         base_name = os.path.splitext(os.path.basename(video_path))[0]
         os.makedirs(self.config.output_dir, exist_ok=True)
 
@@ -178,6 +188,8 @@ class Prediction:
         out_writer = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
 
         unique_ids = defaultdict(set)
+        detections_list = []
+        frame_idx = 0
 
         while capture.isOpened():
             ret, frame = capture.read()
@@ -190,15 +202,24 @@ class Prediction:
                 boxes = results[0].boxes
                 ids = boxes.id.cpu().numpy().astype(int)
                 clss = boxes.cls.cpu().numpy().astype(int)
-                for obj_id, cls_id in zip(ids, clss):
-                    class_name = self.model.names[cls_id]
+                confs = boxes.conf.cpu().numpy().astype(float) if boxes.conf is not None else [1.0] * len(ids)
+
+                for obj_id, cls_id, conf in zip(ids, clss, confs):
+                    class_name = self.class_id_to_name.get(cls_id, str(self.model.names[cls_id])).lower()
                     unique_ids[class_name].add(obj_id)
+                    detections_list.append({
+                        "track_id": int(obj_id),
+                        "class_name": class_name,
+                        "confidence": float(conf),
+                        "frame_no": int(frame_idx)
+                    })
 
                 annotated_frame = results[0].plot()
             else:
                 annotated_frame = frame
 
             out_writer.write(annotated_frame)
+            frame_idx += 1
 
             if display_preview:
                 cv2.imshow('YOLO Video Tracking', annotated_frame)
@@ -221,7 +242,8 @@ class Prediction:
             "counts": final_counts,
             "severity_score": score,
             "priority": priority,
-            "remark": remark
+            "remark": remark,
+            "detections": detections_list
         }
 
         if generate_pdf:
@@ -235,7 +257,7 @@ class Prediction:
     # 3. VIDEO + GPS ANALYZER (500M CHAINAGE)
     # ==========================================
     def video_gps_classifier(self, video_path: str, gps_csv_path: str, generate_pdf: bool = True):
-        """Synchronizes video with 1Hz GPS, partitions 500m segments, and scores each segment."""
+        """Synchronizes video with 1Hz GPS, partitions 500m segments, and collects detections."""
         base_name = os.path.splitext(os.path.basename(video_path))[0]
         os.makedirs(self.config.output_dir, exist_ok=True)
 
@@ -262,6 +284,7 @@ class Prediction:
         current_set_defects = {c: [] for c in range(6)}
         set_start_coords = self.interpolate_gps(df_gps, 0.0)[:2]
         segments_summary = []
+        detections_list = []
 
         frame_idx = 0
 
@@ -288,9 +311,17 @@ class Prediction:
                 boxes = results[0].boxes
                 ids = boxes.id.cpu().numpy().astype(int)
                 clss = boxes.cls.cpu().numpy().astype(int)
-                confs = boxes.conf.cpu().numpy().astype(float)
+                confs = boxes.conf.cpu().numpy().astype(float) if boxes.conf is not None else [1.0] * len(ids)
 
                 for obj_id, cls_id, conf in zip(ids, clss, confs):
+                    class_name = self.class_id_to_name.get(cls_id, str(self.model.names[cls_id])).lower()
+                    detections_list.append({
+                        "track_id": int(obj_id),
+                        "class_name": class_name,
+                        "confidence": float(conf),
+                        "frame_no": int(frame_idx)
+                    })
+
                     if obj_id not in global_seen_track_ids:
                         global_seen_track_ids.add(obj_id)
                         current_set_defects[cls_id].append({
@@ -307,7 +338,7 @@ class Prediction:
 
             # 500-Meter Chainage Boundary Trigger
             if d_accum >= 500.0:
-                counts = {cls_id: len(items) for cls_id, items in current_set_defects.items()}
+                counts = {self.class_id_to_name.get(cls_id, str(cls_id)): len(items) for cls_id, items in current_set_defects.items()}
                 score, priority, _ = self.calculate_severity(counts, max_score=None)
 
                 segments_summary.append({
@@ -336,7 +367,7 @@ class Prediction:
 
         # Flush Partial Final Segment
         if d_accum > 0 or frame_idx > 0:
-            counts = {cls_id: len(items) for cls_id, items in current_set_defects.items()}
+            counts = {self.class_id_to_name.get(cls_id, str(cls_id)): len(items) for cls_id, items in current_set_defects.items()}
             score, priority, _ = self.calculate_severity(counts, max_score=None)
 
             segments_summary.append({
@@ -357,7 +388,8 @@ class Prediction:
             "output_video_path": output_video_path,
             "total_distance_km": round(total_route_distance / 1000.0, 2),
             "total_segments": active_set_num,
-            "segments": segments_summary
+            "segments": segments_summary,
+            "detections": detections_list
         }
 
         if generate_pdf:
@@ -427,11 +459,11 @@ class Prediction:
                 c = seg["counts"]
                 table_data.append([
                     Paragraph(f"Set #{seg['set_number']}", normal_style),
-                    Paragraph(str(c.get(0, 0)), normal_style),
-                    Paragraph(str(c.get(1, 0)), normal_style),
-                    Paragraph(str(c.get(2, 0)), normal_style),
-                    Paragraph(str(c.get(3, 0)), normal_style),
-                    Paragraph(str(c.get(5, 0)), normal_style),
+                    Paragraph(str(c.get("pothole", 0)), normal_style),
+                    Paragraph(str(c.get("crack", 0)), normal_style),
+                    Paragraph(str(c.get("debris", 0)), normal_style),
+                    Paragraph(str(c.get("manhole", 0)), normal_style),
+                    Paragraph(str(c.get("road barricade", 0)), normal_style),
                     Paragraph(f"{seg['score']:.1f}", normal_style),
                     Paragraph(f"<b>{seg['priority']}</b>", normal_style)
                 ])
@@ -454,11 +486,3 @@ class Prediction:
 
 if __name__ == "__main__":
     predictor = Prediction()
-    # 1. Image Example:
-    # img_res = predictor.image_classifier('test/sample.jpg')
-
-    # 2. Standalone Video Example:
-    # vid_res = predictor.video_classifier('test/sample.mp4')
-
-    # 3. Video + GPS Example:
-    # gps_res = predictor.video_gps_classifier('test/sample.mp4', 'test/route_telemetry.csv')
