@@ -1,5 +1,5 @@
-import os
-from sqlalchemy import Column, Integer, String, Float, TIMESTAMP, ForeignKey, text
+import yaml
+from sqlalchemy import Column, Integer, String, Float, TIMESTAMP, ForeignKey, text, func, distinct
 from sqlalchemy.orm import relationship
 from src.database.engine import ENGINE, BASE, SESSION_LOCAL
 
@@ -30,34 +30,27 @@ class DetectionModel(BASE):
 
 
 def init_db():
-    """1. Creates the database tables if they do not exist."""
+    """Creates the database tables if they do not exist."""
     BASE.metadata.create_all(bind=ENGINE)
     print("SUCCESS: Database tables initialized successfully via SQLAlchemy.")
 
 
 def create_run(mode, input_path):
-    """2. Creates a new run record and returns the new run_id."""
-    session = SESSION_LOCAL()
-    try:
+    """Creates a new run record and returns the new run_id."""
+    with SESSION_LOCAL() as session:
         new_run = RunModel(mode=mode, input_path=input_path)
         session.add(new_run)
         session.commit()
         session.refresh(new_run)
         return new_run.run_id
-    except Exception as e:
-        session.rollback()
-        raise e
-    finally:
-        session.close()
 
 
 def add_detections(run_id, detections):
-    """3. Bulk insert detections using a list of dictionaries."""
+    """Bulk insert detections using a list of dictionaries."""
     if not detections:
         return
-    session = SESSION_LOCAL()
-    try:
-        detection_objects = [
+    with SESSION_LOCAL() as session:
+        session.bulk_save_objects([
             DetectionModel(
                 run_id=run_id,
                 track_id=d.get('track_id'),
@@ -66,68 +59,54 @@ def add_detections(run_id, detections):
                 frame_no=d.get('frame_no')
             )
             for d in detections
-        ]
-        session.bulk_save_objects(detection_objects)
+        ])
         session.commit()
-    except Exception as e:
-        session.rollback()
-        raise e
-    finally:
-        session.close()
 
 
 def update_run_outputs(run_id, output_path, report_path):
-    """4. Fills in the result paths after processing finishes."""
-    session = SESSION_LOCAL()
-    try:
+    """Fills in the result paths after processing finishes."""
+    with SESSION_LOCAL() as session:
         run = session.get(RunModel, run_id)
         if run:
             run.output_path = output_path
             run.report_path = report_path
             session.commit()
-    except Exception as e:
-        session.rollback()
-        raise e
-    finally:
-        session.close()
 
 
 def get_class_counts(run_id):
-    """5. Returns defect counts per class. 
-       For video/video_gps, counts unique track_id per class (COUNT DISTINCT).
-       For images where track_id is NULL, counts total occurrences (COUNT(*)).
-    """
-    session = SESSION_LOCAL()
-    try:
+    """Returns defect counts per class directly via SQL aggregate queries to avoid memory overhead."""
+    with SESSION_LOCAL() as session:
         run = session.get(RunModel, run_id)
         if not run:
             return {}
         
-        detections = run.detections
-        counts = {}
-        
         if run.mode == 'image':
-            for d in detections:
-                counts[d.class_name] = counts.get(d.class_name, 0) + 1
+            results = session.query(
+                DetectionModel.class_name,
+                func.count(DetectionModel.det_id)
+            ).filter(
+                DetectionModel.run_id == run_id
+            ).group_by(
+                DetectionModel.class_name
+            ).all()
         else:
-            # Video modes: Count unique track_id per class
-            unique_tracks_per_class = {}
-            for d in detections:
-                if d.track_id is not None:
-                    if d.class_name not in unique_tracks_per_class:
-                        unique_tracks_per_class[d.class_name] = set()
-                    unique_tracks_per_class[d.class_name].add(d.track_id)
-            for cls_name, tracks in unique_tracks_per_class.items():
-                counts[cls_name] = len(tracks)
+            results = session.query(
+                DetectionModel.class_name,
+                func.count(distinct(DetectionModel.track_id))
+            ).filter(
+                DetectionModel.run_id == run_id,
+                DetectionModel.track_id.isnot(None)
+            ).group_by(
+                DetectionModel.class_name
+            ).all()
                 
-        return counts
-    finally:
-        session.close()
+        return {class_name: count for class_name, count in results}
 
 
 def get_severity_score(run_id):
-    """6. Sums (defect count x hazard weight) using a Python dictionary."""
-    hazard_weights = {
+    """Calculates severity score using hazard weights loaded from the configuration file."""
+    import os
+    default_weights = {
         'pothole': 5.0,
         'crack': 3.0,
         'debris': 2.5,
@@ -135,18 +114,27 @@ def get_severity_score(run_id):
         'road barricade': 1.0,
         'speed breaker': 0.5
     }
+    
+    hazard_weights = default_weights
+    try:
+        root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        config_path = os.path.join(root_dir, "credientials", "config.ymal")
+        if os.path.exists(config_path):
+            with open(config_path, "r") as f:
+                config = yaml.safe_load(f)
+                if config and 'hazard_weights' in config:
+                    hazard_weights = config['hazard_weights']
+    except Exception:
+        pass
+
     counts = get_class_counts(run_id)
-    total_score = 0.0
-    for class_name, count in counts.items():
-        weight = hazard_weights.get(class_name.lower().strip(), 1.0)
-        total_score += count * weight
+    total_score = sum(count * hazard_weights.get(name.lower().strip(), 1.0) for name, count in counts.items())
     return round(total_score, 2)
 
 
 def get_recent_runs(limit=10):
-    """7. Returns the latest runs for history view."""
-    session = SESSION_LOCAL()
-    try:
+    """Returns the latest runs for history view."""
+    with SESSION_LOCAL() as session:
         runs = session.query(RunModel).order_by(RunModel.created_at.desc()).limit(limit).all()
         return [
             {
@@ -159,5 +147,3 @@ def get_recent_runs(limit=10):
             }
             for r in runs
         ]
-    finally:
-        session.close()
